@@ -34,6 +34,7 @@ const AdminDashboard = () => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
+        document.title = "Admin - Best Velan Tailors";
         // Setup Axios Interceptors for Auth
         const reqInterceptor = axios.interceptors.request.use((config) => {
             const token = localStorage.getItem('adminToken');

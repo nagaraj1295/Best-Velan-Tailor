@@ -10,6 +10,7 @@ const Home = () => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
+        document.title = "Best Velan Tailors";
         // Animation logic
         const elements = document.querySelectorAll('.fade-up');
         const observer = new IntersectionObserver((entries) => {
