@@ -28,6 +28,7 @@ const AdminDashboard = () => {
     // Analytics Date Filter States
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
+    const [activeStatFilter, setActiveStatFilter] = useState(null);
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -176,39 +177,10 @@ const AdminDashboard = () => {
             weekly: 0,
             monthly: 0,
             yearly: 0,
-            statusCounts: {
-                'Order Received': 0,
-                'Cutting & Sizing': 0,
-                'Stitching in Progress': 0,
-                'Ready for Pickup': 0
-            }
+            total: orders.length
         };
 
-        const filteredOrders = orders.filter(order => {
-            if (!filterStartDate && !filterEndDate) return true;
-            
-            const orderDate = new Date(order.createdAt);
-            // set hours to 0 to compare just the date parts
-            orderDate.setHours(0, 0, 0, 0);
-            
-            let isAfterStart = true;
-            let isBeforeEnd = true;
-
-            if (filterStartDate) {
-                const start = new Date(filterStartDate);
-                start.setHours(0, 0, 0, 0);
-                isAfterStart = orderDate >= start;
-            }
-            if (filterEndDate) {
-                const end = new Date(filterEndDate);
-                end.setHours(23, 59, 59, 999);
-                isBeforeEnd = orderDate <= end;
-            }
-
-            return isAfterStart && isBeforeEnd;
-        });
-
-        filteredOrders.forEach(order => {
+        orders.forEach(order => {
             const orderDate = new Date(order.createdAt);
             const diffDays = Math.round(Math.abs((now - orderDate) / oneDay));
 
@@ -217,13 +189,28 @@ const AdminDashboard = () => {
             if (diffDays <= 7) stats.weekly++;
             if (diffDays <= 30) stats.monthly++;
             if (diffDays <= 365) stats.yearly++;
-
-            if (stats.statusCounts[order.status] !== undefined) {
-                stats.statusCounts[order.status]++;
-            }
         });
 
         return stats;
+    };
+
+    const getOrdersForStatFilter = () => {
+        if (!activeStatFilter) return [];
+        const now = new Date();
+        const oneDay = 24 * 60 * 60 * 1000;
+        
+        return orders.filter(order => {
+            const orderDate = new Date(order.createdAt);
+            const diffDays = Math.round(Math.abs((now - orderDate) / oneDay));
+            
+            if (activeStatFilter === 'today') return diffDays === 0;
+            if (activeStatFilter === 'yesterday') return diffDays === 1;
+            if (activeStatFilter === 'weekly') return diffDays <= 7;
+            if (activeStatFilter === 'monthly') return diffDays <= 30;
+            if (activeStatFilter === 'yearly') return diffDays <= 365;
+            if (activeStatFilter === 'total') return true;
+            return false;
+        }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     };
 
     const getTabTitle = () => {
@@ -242,62 +229,143 @@ const AdminDashboard = () => {
         switch(activeTab) {
             case 'analytics':
                 const stats = getOrderStats();
+                const filteredOrdersForGraph = orders.filter(order => {
+                    if (!filterStartDate && !filterEndDate) return true;
+                    
+                    const orderDate = new Date(order.createdAt);
+                    orderDate.setHours(0, 0, 0, 0);
+                    
+                    let isAfterStart = true;
+                    let isBeforeEnd = true;
+
+                    if (filterStartDate) {
+                        const start = new Date(filterStartDate);
+                        start.setHours(0, 0, 0, 0);
+                        isAfterStart = orderDate >= start;
+                    }
+                    if (filterEndDate) {
+                        const end = new Date(filterEndDate);
+                        end.setHours(23, 59, 59, 999);
+                        isBeforeEnd = orderDate <= end;
+                    }
+
+                    return isAfterStart && isBeforeEnd;
+                });
+
+                let statusCounts = { 'Order Received': 0, 'Cutting & Sizing': 0, 'Stitching in Progress': 0, 'Ready for Pickup': 0 };
+                filteredOrdersForGraph.forEach(order => {
+                    if (statusCounts[order.status] !== undefined) {
+                        statusCounts[order.status]++;
+                    }
+                });
+
                 const chartData = [
-                    { name: 'Received', count: stats.statusCounts['Order Received'], color: '#0284c7' },
-                    { name: 'Cutting', count: stats.statusCounts['Cutting & Sizing'], color: '#854d0e' },
-                    { name: 'Stitching', count: stats.statusCounts['Stitching in Progress'], color: '#c2410c' },
-                    { name: 'Ready', count: stats.statusCounts['Ready for Pickup'], color: '#15803d' },
+                    { name: 'Received', count: statusCounts['Order Received'], color: '#0284c7' },
+                    { name: 'Cutting', count: statusCounts['Cutting & Sizing'], color: '#854d0e' },
+                    { name: 'Stitching', count: statusCounts['Stitching in Progress'], color: '#c2410c' },
+                    { name: 'Ready', count: statusCounts['Ready for Pickup'], color: '#15803d' },
                 ];
+
+                const statOrders = getOrdersForStatFilter();
 
                 return (
                     <div className="fade-up in-view">
                         <div className="analytics-header">
                             <h2 className="admin-page-title" style={{ marginBottom: 0 }}>Analytics & Dashboard</h2>
-                            
-                            <div className="date-filter-container">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>From:</label>
-                                    <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>To:</label>
-                                    <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} />
-                                </div>
-                                {(filterStartDate || filterEndDate) && (
-                                    <button onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }} title="Clear Filter">
-                                        <X size={18} />
-                                    </button>
-                                )}
-                            </div>
                         </div>
                         
                         {/* Summary Cards */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-                            <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                            <div className="admin-content-card" onClick={() => setActiveStatFilter(activeStatFilter === 'today' ? null : 'today')} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: activeStatFilter === 'today' ? '2px solid #0284c7' : '1px solid transparent' }}>
                                 <div style={{ backgroundColor: '#e0f2fe', padding: '15px', borderRadius: '12px', color: '#0284c7' }}><Clock size={24} /></div>
                                 <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Today</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.today}</div></div>
                             </div>
-                            <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div className="admin-content-card" onClick={() => setActiveStatFilter(activeStatFilter === 'yesterday' ? null : 'yesterday')} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: activeStatFilter === 'yesterday' ? '2px solid #9333ea' : '1px solid transparent' }}>
                                 <div style={{ backgroundColor: '#f3e8ff', padding: '15px', borderRadius: '12px', color: '#9333ea' }}><Clock size={24} /></div>
                                 <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Yesterday</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.yesterday}</div></div>
                             </div>
-                            <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div className="admin-content-card" onClick={() => setActiveStatFilter(activeStatFilter === 'weekly' ? null : 'weekly')} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: activeStatFilter === 'weekly' ? '2px solid #854d0e' : '1px solid transparent' }}>
                                 <div style={{ backgroundColor: '#fef08a', padding: '15px', borderRadius: '12px', color: '#854d0e' }}><TrendingUp size={24} /></div>
                                 <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Last 7 Days</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.weekly}</div></div>
                             </div>
-                            <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div className="admin-content-card" onClick={() => setActiveStatFilter(activeStatFilter === 'monthly' ? null : 'monthly')} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: activeStatFilter === 'monthly' ? '2px solid #c2410c' : '1px solid transparent' }}>
                                 <div style={{ backgroundColor: '#ffedd5', padding: '15px', borderRadius: '12px', color: '#c2410c' }}><Calendar size={24} /></div>
                                 <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Last 30 Days</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.monthly}</div></div>
                             </div>
-                            <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div className="admin-content-card" onClick={() => setActiveStatFilter(activeStatFilter === 'yearly' ? null : 'yearly')} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: activeStatFilter === 'yearly' ? '2px solid #15803d' : '1px solid transparent' }}>
                                 <div style={{ backgroundColor: '#dcfce7', padding: '15px', borderRadius: '12px', color: '#15803d' }}><BarChart3 size={24} /></div>
                                 <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>This Year</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.yearly}</div></div>
                             </div>
+                            <div className="admin-content-card" onClick={() => setActiveStatFilter(activeStatFilter === 'total' ? null : 'total')} style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', border: activeStatFilter === 'total' ? '2px solid #475569' : '1px solid transparent' }}>
+                                <div style={{ backgroundColor: '#f1f5f9', padding: '15px', borderRadius: '12px', color: '#475569' }}><LayoutDashboard size={24} /></div>
+                                <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Total Orders</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.total}</div></div>
+                            </div>
                         </div>
+
+                        {/* Inline Details Table for active filter */}
+                        {activeStatFilter && (
+                            <div className="admin-content-card" style={{ marginBottom: '30px', borderLeft: '4px solid #D4AF37' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                    <h3 style={{ color: '#0B1B3D', textTransform: 'capitalize' }}>{activeStatFilter} Orders ({statOrders.length})</h3>
+                                    <button onClick={() => setActiveStatFilter(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={20}/></button>
+                                </div>
+                                <div className="table-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                    <table className="app-table" style={{ fontSize: '0.9rem' }}>
+                                        <thead>
+                                            <tr>
+                                                <th>Order ID / Date</th>
+                                                <th>Customer</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {statOrders.map(order => (
+                                                <tr key={`stat-${order._id}`}>
+                                                    <td>
+                                                        <div style={{fontWeight: '700', color: '#0B1B3D'}}>{order.orderNumber}</div>
+                                                        <div style={{fontSize: '0.8rem', color: '#64748b'}}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div style={{fontWeight: '600'}}>{order.customer?.name}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={getStatusClass(order.status)} style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
+                                                            {order.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {statOrders.length === 0 && (
+                                                <tr><td colSpan="3" style={{textAlign: 'center', padding: '20px'}}>No orders found for this period.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Chart Area */}
                         <div className="admin-content-card" style={{ marginBottom: '30px' }}>
-                            <h3 style={{ marginBottom: '20px', color: '#0B1B3D' }}>Orders by Status</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+                                <h3 style={{ color: '#0B1B3D', margin: 0 }}>Orders by Status Filter</h3>
+                                
+                                {/* Date Filter is now here, right above the graph */}
+                                <div className="date-filter-container">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>From:</label>
+                                        <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>To:</label>
+                                        <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} />
+                                    </div>
+                                    {(filterStartDate || filterEndDate) && (
+                                        <button onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }} title="Clear Filter">
+                                            <X size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                             <div style={{ width: '100%', height: '300px' }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
