@@ -221,6 +221,10 @@ ul {
     justify-content: center;
 }
 
+.mobile-only-btn {
+    display: none;
+}
+
 /* =========================================
    Services Section
 ========================================= */
@@ -451,6 +455,15 @@ ul {
 
     .nav-list li {
         margin: 15px 0;
+    }
+
+    .nav-call-btn {
+        display: none;
+    }
+
+    .mobile-only-btn {
+        display: inline-block;
+        margin-top: 10px;
     }
 
     .hero-title {
