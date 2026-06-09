@@ -462,8 +462,7 @@ ul {
     }
 
     .mobile-only-btn {
-        display: inline-block;
-        margin-top: 10px;
+        display: block;
     }
 
     .hero-title {
@@ -472,6 +471,17 @@ ul {
     
     .hero-buttons {
         flex-direction: column;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto;
+        gap: 15px;
+    }
+    
+    .hero-buttons .btn-primary, 
+    .hero-buttons .btn-secondary {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 1.1rem;
     }
     
     .footer-container {
