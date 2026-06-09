@@ -19,7 +19,7 @@ const AdminLogin = () => {
             localStorage.setItem('adminProfile', JSON.stringify(res.data.admin));
             navigate('/admin/dashboard');
         } catch (err) {
-            setError('Invalid username or password');
+            setError(err.response?.data?.error || `Connection Error: ${err.message}. Please check if the backend is running and VITE_API_URL is correct.`);
         }
     };
 
