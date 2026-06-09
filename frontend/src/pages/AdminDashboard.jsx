@@ -25,6 +25,10 @@ const AdminDashboard = () => {
     const [newPassword, setNewPassword] = useState('');
     const [profileMsg, setProfileMsg] = useState('');
 
+    // Analytics Date Filter States
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
+
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
@@ -179,7 +183,31 @@ const AdminDashboard = () => {
             }
         };
 
-        orders.forEach(order => {
+        const filteredOrders = orders.filter(order => {
+            if (!filterStartDate && !filterEndDate) return true;
+            
+            const orderDate = new Date(order.createdAt);
+            // set hours to 0 to compare just the date parts
+            orderDate.setHours(0, 0, 0, 0);
+            
+            let isAfterStart = true;
+            let isBeforeEnd = true;
+
+            if (filterStartDate) {
+                const start = new Date(filterStartDate);
+                start.setHours(0, 0, 0, 0);
+                isAfterStart = orderDate >= start;
+            }
+            if (filterEndDate) {
+                const end = new Date(filterEndDate);
+                end.setHours(23, 59, 59, 999);
+                isBeforeEnd = orderDate <= end;
+            }
+
+            return isAfterStart && isBeforeEnd;
+        });
+
+        filteredOrders.forEach(order => {
             const orderDate = new Date(order.createdAt);
             const diffDays = Math.round(Math.abs((now - orderDate) / oneDay));
 
@@ -221,7 +249,25 @@ const AdminDashboard = () => {
 
                 return (
                     <div className="fade-up in-view">
-                        <h2 className="admin-page-title">Analytics & Dashboard</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '24px' }}>
+                            <h2 className="admin-page-title" style={{ marginBottom: 0 }}>Analytics & Dashboard</h2>
+                            
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#fff', padding: '10px 15px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>From:</label>
+                                    <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>To:</label>
+                                    <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} />
+                                </div>
+                                {(filterStartDate || filterEndDate) && (
+                                    <button onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }} title="Clear Filter">
+                                        <X size={18} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                         
                         {/* Summary Cards */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' }}>
