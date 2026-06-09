@@ -28,4 +28,27 @@ document.addEventListener("DOMContentLoaded", () => {
             header.style.padding = "15px 0";
         }
     });
+
+    // Intersection Observer for scroll animations
+    const fadeElements = document.querySelectorAll(".fade-up");
+    
+    const appearOptions = {
+        threshold: 0.15,
+        rootMargin: "0px 0px -50px 0px"
+    };
+
+    const appearOnScroll = new IntersectionObserver(function(entries, observer) {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) {
+                return;
+            } else {
+                entry.target.classList.add("in-view");
+                observer.unobserve(entry.target);
+            }
+        });
+    }, appearOptions);
+
+    fadeElements.forEach(el => {
+        appearOnScroll.observe(el);
+    });
 });

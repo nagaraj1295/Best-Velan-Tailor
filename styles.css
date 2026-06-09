@@ -262,7 +262,27 @@ ul {
     margin-bottom: 15px;
     color: var(--primary-color);
 }
+/* =========================================
+   Animations
+========================================= */
+.fade-up {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
 
+.fade-up.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Staggered delays for child elements if needed */
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
+.delay-6 { transition-delay: 0.6s; }
 .service-card p {
     color: var(--text-muted);
 }
