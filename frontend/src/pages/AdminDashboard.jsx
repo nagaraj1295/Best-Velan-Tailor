@@ -141,7 +141,7 @@ const AdminDashboard = () => {
     const getWhatsAppMessage = (order) => {
         const name = order.customer?.name || 'Customer';
         const num = order.orderNumber;
-        const link = window.location.origin;
+        const link = 'https://best-velan-tailor.vercel.app';
         
         switch(order.status) {
             case 'Order Received':
@@ -151,7 +151,7 @@ const AdminDashboard = () => {
             case 'Stitching in Progress':
                 return `Hello ${name}, your order #${num} is currently being stitched. We’re crafting it with precision.`;
             case 'Ready for Pickup':
-                return `Hello ${name}, your order #${num} is ready for pickup at Best Velan Tailors. We look forward to seeing you!\nFor any query fill your feedback here.`;
+                return `Hello ${name}, your order #${num} is ready for pickup at Best Velan Tailors. We look forward to seeing you!\nFor any query fill your feedback here: ${link}#feedback`;
             default:
                 return `Hello ${name}! Your order #${num} at Best Velan Tailors is currently: ${order.status}.`;
         }
@@ -172,6 +172,7 @@ const AdminDashboard = () => {
         
         let stats = {
             today: 0,
+            yesterday: 0,
             weekly: 0,
             monthly: 0,
             yearly: 0,
@@ -212,6 +213,7 @@ const AdminDashboard = () => {
             const diffDays = Math.round(Math.abs((now - orderDate) / oneDay));
 
             if (diffDays === 0) stats.today++;
+            if (diffDays === 1) stats.yesterday++;
             if (diffDays <= 7) stats.weekly++;
             if (diffDays <= 30) stats.monthly++;
             if (diffDays <= 365) stats.yearly++;
@@ -249,10 +251,10 @@ const AdminDashboard = () => {
 
                 return (
                     <div className="fade-up in-view">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '24px' }}>
+                        <div className="analytics-header">
                             <h2 className="admin-page-title" style={{ marginBottom: 0 }}>Analytics & Dashboard</h2>
                             
-                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', backgroundColor: '#fff', padding: '10px 15px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
+                            <div className="date-filter-container">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>From:</label>
                                     <input type="date" className="app-input" style={{ padding: '6px', fontSize: '0.85rem' }} value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} />
@@ -274,6 +276,10 @@ const AdminDashboard = () => {
                             <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <div style={{ backgroundColor: '#e0f2fe', padding: '15px', borderRadius: '12px', color: '#0284c7' }}><Clock size={24} /></div>
                                 <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Today</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.today}</div></div>
+                            </div>
+                            <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div style={{ backgroundColor: '#f3e8ff', padding: '15px', borderRadius: '12px', color: '#9333ea' }}><Clock size={24} /></div>
+                                <div><div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>Yesterday</div><div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#0B1B3D' }}>{stats.yesterday}</div></div>
                             </div>
                             <div className="admin-content-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <div style={{ backgroundColor: '#fef08a', padding: '15px', borderRadius: '12px', color: '#854d0e' }}><TrendingUp size={24} /></div>

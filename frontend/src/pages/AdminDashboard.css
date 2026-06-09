@@ -313,3 +313,34 @@
         display: none; /* Hide on mobile since it's in the mobile header */
     }
 }
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.date-filter-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background-color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+    .analytics-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .date-filter-container {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
