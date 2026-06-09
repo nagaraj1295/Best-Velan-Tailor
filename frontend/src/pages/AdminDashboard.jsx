@@ -329,9 +329,17 @@ const AdminDashboard = () => {
                                                         <div style={{fontWeight: '600'}}>{order.customer?.name}</div>
                                                     </td>
                                                     <td>
-                                                        <span className={getStatusClass(order.status)} style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600' }}>
-                                                            {order.status}
-                                                        </span>
+                                                        <select 
+                                                            className={`app-input ${getStatusClass(order.status)}`}
+                                                            style={{padding: '6px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem', borderRadius: '8px'}}
+                                                            value={order.status} 
+                                                            onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
+                                                        >
+                                                            <option value="Order Received">Received</option>
+                                                            <option value="Cutting & Sizing">Cutting</option>
+                                                            <option value="Stitching in Progress">Stitching</option>
+                                                            <option value="Ready for Pickup">Ready</option>
+                                                        </select>
                                                     </td>
                                                 </tr>
                                             ))}
