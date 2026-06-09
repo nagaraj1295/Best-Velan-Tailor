@@ -29,6 +29,7 @@ const AdminDashboard = () => {
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
     const [activeStatFilter, setActiveStatFilter] = useState(null);
+    const [feedbackFilter, setFeedbackFilter] = useState('All');
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -121,6 +122,22 @@ const AdminDashboard = () => {
             try {
                 await axios.delete(`${API_URL}/api/orders/${orderId}`);
                 fetchOrders();
+            } catch (error) { console.error("Delete failed"); }
+        }
+    };
+
+    const handleUpdateFeedbackCategory = async (feedbackId, category) => {
+        try {
+            await axios.put(`${API_URL}/api/feedback/${feedbackId}`, { category });
+            fetchFeedbacks();
+        } catch (error) { console.error("Failed to update category"); }
+    };
+
+    const handleDeleteFeedback = async (feedbackId) => {
+        if(window.confirm('Are you sure you want to delete this feedback?')) {
+            try {
+                await axios.delete(`${API_URL}/api/feedback/${feedbackId}`);
+                fetchFeedbacks();
             } catch (error) { console.error("Delete failed"); }
         }
     };
@@ -392,19 +409,72 @@ const AdminDashboard = () => {
                     </div>
                 );
             case 'feedback':
+                const filteredFeedbacks = feedbackFilter === 'All' ? feedbacks : feedbacks.filter(f => (f.category || 'Uncategorized') === feedbackFilter);
+                
                 return (
                     <div className="admin-content-card fade-up in-view">
-                        <h2 className="admin-page-title">Customer Feedback</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+                            <h2 className="admin-page-title" style={{ marginBottom: 0 }}>Customer Feedback</h2>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                {['All', 'Uncategorized', 'Positive', 'Improvement'].map(filter => (
+                                    <button 
+                                        key={filter} 
+                                        onClick={() => setFeedbackFilter(filter)}
+                                        style={{ 
+                                            padding: '8px 16px', 
+                                            borderRadius: '20px', 
+                                            border: 'none', 
+                                            cursor: 'pointer', 
+                                            fontWeight: '600',
+                                            backgroundColor: feedbackFilter === filter ? '#0B1B3D' : '#e2e8f0',
+                                            color: feedbackFilter === filter ? '#fff' : '#475569',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        {filter}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {feedbacks.length === 0 ? (
-                                <div style={{textAlign: 'center', padding: '30px', color: '#64748b'}}>No feedback received yet.</div>
-                            ) : feedbacks.map(f => (
+                            {filteredFeedbacks.length === 0 ? (
+                                <div style={{textAlign: 'center', padding: '30px', color: '#64748b'}}>No feedback found in this category.</div>
+                            ) : filteredFeedbacks.map(f => (
                                 <div key={f._id} style={{ padding: '20px', border: '1px solid #e2e8f0', borderRadius: '12px', backgroundColor: '#f8fafc' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#0B1B3D' }}>{f.name}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(f.createdAt).toLocaleDateString()} at {new Date(f.createdAt).toLocaleTimeString()}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#0B1B3D' }}>{f.name}</div>
+                                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{new Date(f.createdAt).toLocaleDateString()} at {new Date(f.createdAt).toLocaleTimeString()}</div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <select 
+                                                className="app-input"
+                                                style={{ 
+                                                    padding: '6px 12px', 
+                                                    borderRadius: '8px', 
+                                                    fontSize: '0.85rem', 
+                                                    fontWeight: '600', 
+                                                    border: '1px solid #cbd5e1',
+                                                    backgroundColor: (f.category === 'Positive') ? '#dcfce7' : (f.category === 'Improvement') ? '#fee2e2' : '#fff',
+                                                    color: (f.category === 'Positive') ? '#166534' : (f.category === 'Improvement') ? '#991b1b' : '#475569'
+                                                }}
+                                                value={f.category || 'Uncategorized'}
+                                                onChange={(e) => handleUpdateFeedbackCategory(f._id, e.target.value)}
+                                            >
+                                                <option value="Uncategorized">Uncategorized</option>
+                                                <option value="Positive">Positive</option>
+                                                <option value="Improvement">Improvement</option>
+                                            </select>
+                                            <button 
+                                                onClick={() => handleDeleteFeedback(f._id)}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '5px' }}
+                                                title="Delete Feedback"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div style={{ color: '#334155', lineHeight: '1.6' }}>
+                                    <div style={{ color: '#334155', lineHeight: '1.6', marginTop: '10px' }}>
                                         "{f.message}"
                                     </div>
                                 </div>

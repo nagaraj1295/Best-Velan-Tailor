@@ -31,4 +31,27 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Update Feedback Category
+router.put('/:id', async (req, res) => {
+    try {
+        const { category } = req.body;
+        const updatedFeedback = await Feedback.findByIdAndUpdate(req.params.id, { category }, { new: true });
+        res.status(200).json(updatedFeedback);
+    } catch (error) {
+        console.error('Error updating feedback:', error);
+        res.status(500).json({ error: 'Failed to update feedback category' });
+    }
+});
+
+// Delete Feedback
+router.delete('/:id', async (req, res) => {
+    try {
+        await Feedback.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: 'Feedback deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting feedback:', error);
+        res.status(500).json({ error: 'Failed to delete feedback' });
+    }
+});
+
 module.exports = router;

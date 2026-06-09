@@ -10,6 +10,11 @@ const FeedbackSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    category: {
+        type: String,
+        enum: ['Uncategorized', 'Positive', 'Improvement'],
+        default: 'Uncategorized'
+    },
     createdAt: {
         type: Date,
         default: Date.now
