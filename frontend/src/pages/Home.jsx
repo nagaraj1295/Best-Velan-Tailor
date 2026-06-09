@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import OrderStatusModal from '../components/OrderStatusModal';
 
 const Home = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [feedback, setFeedback] = useState({ name: '', message: '' });
+    const [feedbackMsg, setFeedbackMsg] = useState('');
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
         // Animation logic
@@ -19,6 +23,19 @@ const Home = () => {
         elements.forEach(el => observer.observe(el));
         return () => observer.disconnect();
     }, []);
+
+    const handleFeedbackSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${API_URL}/api/feedback`, feedback);
+            setFeedbackMsg('Thank you! Your feedback has been submitted successfully.');
+            setFeedback({ name: '', message: '' });
+            setTimeout(() => setFeedbackMsg(''), 5000);
+        } catch (error) {
+            setFeedbackMsg('Failed to submit feedback. Please try again.');
+            setTimeout(() => setFeedbackMsg(''), 5000);
+        }
+    };
 
     return (
         <div>
@@ -143,6 +160,47 @@ const Home = () => {
                                     </li>
                                 </ul>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Feedback Section */}
+                <section id="feedback" className="feedback section-padding" style={{ backgroundColor: '#f8fafc' }}>
+                    <div className="container">
+                        <div className="section-header fade-up">
+                            <h2 className="section-title">Leave Your <span className="highlight">Feedback</span></h2>
+                            <p className="section-desc">We value your opinion! Let us know how we did.</p>
+                        </div>
+                        <div className="feedback-form-wrapper fade-up delay-1" style={{ maxWidth: '600px', margin: '0 auto', background: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                            {feedbackMsg && (
+                                <div style={{ backgroundColor: feedbackMsg.includes('Failed') ? '#fee2e2' : '#dcfce7', color: feedbackMsg.includes('Failed') ? '#991b1b' : '#166534', padding: '16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', fontWeight: '600' }}>
+                                    {feedbackMsg}
+                                </div>
+                            )}
+                            <form onSubmit={handleFeedbackSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#475569' }}>Your Name</label>
+                                    <input 
+                                        type="text" 
+                                        required 
+                                        value={feedback.name}
+                                        onChange={(e) => setFeedback({ ...feedback, name: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontFamily: 'inherit' }}
+                                        placeholder="e.g. John Doe"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#475569' }}>Your Message</label>
+                                    <textarea 
+                                        required 
+                                        value={feedback.message}
+                                        onChange={(e) => setFeedback({ ...feedback, message: e.target.value })}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', fontFamily: 'inherit', minHeight: '120px', resize: 'vertical' }}
+                                        placeholder="Tell us about your experience..."
+                                    />
+                                </div>
+                                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px', padding: '14px', fontSize: '1.1rem', cursor: 'pointer' }}>Submit Feedback</button>
+                            </form>
                         </div>
                     </div>
                 </section>
