@@ -8,11 +8,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_velan_tailor'
 
 // Initialize default admin if none exists
 const initializeAdmin = async () => {
-    const adminCount = await Admin.countDocuments();
-    if (adminCount === 0) {
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        await Admin.create({ username: 'admin', password: hashedPassword });
-        console.log('Default admin created: admin / admin123');
+    try {
+        const adminCount = await Admin.countDocuments();
+        if (adminCount === 0) {
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            await Admin.create({ username: 'admin', password: hashedPassword });
+            console.log('Default admin created: admin / admin123');
+        }
+    } catch (err) {
+        console.error('Notice: Could not connect to database to initialize admin. Ensure MongoDB is running.');
     }
 };
 initializeAdmin();
