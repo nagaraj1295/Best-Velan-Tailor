@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, PlusCircle, Settings, LogOut, MessageCircle, Trash2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { LayoutDashboard, Users, PlusCircle, Settings, LogOut, MessageCircle, Trash2, ShieldCheck, CheckCircle2, Edit2, Save, X } from 'lucide-react';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -10,12 +10,19 @@ const AdminDashboard = () => {
     const [customers, setCustomers] = useState([]);
     const navigate = useNavigate();
 
-    // Insert Order State
-    const [formData, setFormData] = useState({
-        name: '', place: '', phone: '', materialName: '', status: 'Order Received'
-    });
+    // Form States
+    const [formData, setFormData] = useState({ name: '', place: '', phone: '', materialName: '', status: 'Order Received' });
     const [insertMsg, setInsertMsg] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Edit States
+    const [editingOrderId, setEditingOrderId] = useState(null);
+    const [editFormData, setEditFormData] = useState({ customerName: '', materialName: '', status: '' });
+
+    // Profile States
+    const [newPassword, setNewPassword] = useState('');
+    const [profileMsg, setProfileMsg] = useState('');
+
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
@@ -60,6 +67,32 @@ const AdminDashboard = () => {
         }
     };
 
+    const startEditing = (order) => {
+        setEditingOrderId(order._id);
+        setEditFormData({
+            customerName: order.customer?.name || '',
+            materialName: order.materialName || '',
+            status: order.status || 'Order Received'
+        });
+    };
+
+    const cancelEditing = () => {
+        setEditingOrderId(null);
+        setEditFormData({ customerName: '', materialName: '', status: '' });
+    };
+
+    const handleSaveEdit = async (orderId) => {
+        try {
+            await axios.put(`${API_URL}/api/orders/${orderId}`, editFormData);
+            setEditingOrderId(null);
+            fetchOrders();
+            fetchCustomers(); // Because customer name might have changed
+        } catch (error) {
+            console.error("Update failed", error);
+            alert("Failed to update order details.");
+        }
+    };
+
     const handleUpdateStatus = async (orderId, newStatus) => {
         try {
             await axios.put(`${API_URL}/api/orders/${orderId}/status`, { status: newStatus });
@@ -76,9 +109,18 @@ const AdminDashboard = () => {
         }
     };
 
-    const openWhatsApp = (phone, orderNumber, status) => {
-        const message = encodeURIComponent(`Hello! Your order #${orderNumber} at Best Velan Tailors is currently: ${status}.`);
-        window.open(`https://wa.me/91${phone}?text=${message}`, '_blank');
+    const handleUpdateProfile = async (e) => {
+        e.preventDefault();
+        if(!newPassword) return;
+        try {
+            await axios.put(`${API_URL}/api/auth/profile`, { password: newPassword });
+            setProfileMsg('Password updated successfully!');
+            setNewPassword('');
+            setTimeout(() => setProfileMsg(''), 4000);
+        } catch (error) {
+            setProfileMsg('Failed to update password.');
+            setTimeout(() => setProfileMsg(''), 4000);
+        }
     };
 
     const getStatusClass = (status) => {
@@ -168,42 +210,70 @@ const AdminDashboard = () => {
                                 <tbody>
                                     {orders.length === 0 ? (
                                         <tr><td colSpan="5" style={{textAlign: 'center', padding: '30px', color: '#64748b'}}>No orders found. Create one first!</td></tr>
-                                    ) : orders.map(order => (
-                                        <tr key={order._id}>
-                                            <td>
-                                                <div style={{fontWeight: '700', color: '#0B1B3D'}}>{order.orderNumber}</div>
-                                                <div style={{fontSize: '0.8rem', color: '#64748b'}}>{new Date(order.createdAt).toLocaleDateString()}</div>
-                                            </td>
-                                            <td>
-                                                <div style={{fontWeight: '600'}}>{order.customer?.name}</div>
-                                                <div style={{fontSize: '0.85rem', color: '#64748b'}}>{order.customer?.phone}</div>
-                                            </td>
-                                            <td>{order.materialName}</td>
-                                            <td>
-                                                <select 
-                                                    className={`app-input ${getStatusClass(order.status)}`}
-                                                    style={{padding: '8px', border: 'none', cursor: 'pointer', fontWeight: '600'}}
-                                                    value={order.status} 
-                                                    onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
-                                                >
-                                                    <option value="Order Received">Received</option>
-                                                    <option value="Cutting & Sizing">Cutting</option>
-                                                    <option value="Stitching in Progress">Stitching</option>
-                                                    <option value="Ready for Pickup">Ready</option>
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <div style={{display: 'flex', gap: '5px'}}>
-                                                    <button className="action-btn" onClick={() => openWhatsApp(order.customer?.phone, order.orderNumber, order.status)} title="Notify via WhatsApp" style={{color: '#25D366'}}>
-                                                        <MessageCircle size={20} />
-                                                    </button>
-                                                    <button className="action-btn" onClick={() => handleDeleteOrder(order._id)} title="Delete Order" style={{color: '#ef4444'}}>
-                                                        <Trash2 size={20} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    ) : orders.map(order => {
+                                        const isEditing = editingOrderId === order._id;
+                                        return (
+                                            <tr key={order._id}>
+                                                <td>
+                                                    <div style={{fontWeight: '700', color: '#0B1B3D'}}>{order.orderNumber}</div>
+                                                    <div style={{fontSize: '0.8rem', color: '#64748b'}}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                                                </td>
+                                                <td>
+                                                    {isEditing ? (
+                                                        <input type="text" className="app-input" style={{padding: '6px', fontSize: '0.9rem', width: '100%'}} value={editFormData.customerName} onChange={e => setEditFormData({...editFormData, customerName: e.target.value})} />
+                                                    ) : (
+                                                        <>
+                                                            <div style={{fontWeight: '600'}}>{order.customer?.name}</div>
+                                                            <div style={{fontSize: '0.85rem', color: '#64748b'}}>{order.customer?.phone}</div>
+                                                        </>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {isEditing ? (
+                                                        <input type="text" className="app-input" style={{padding: '6px', fontSize: '0.9rem', width: '100%'}} value={editFormData.materialName} onChange={e => setEditFormData({...editFormData, materialName: e.target.value})} />
+                                                    ) : (
+                                                        order.materialName
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {isEditing ? (
+                                                        <select className="app-input" style={{padding: '6px', fontSize: '0.9rem', width: '100%'}} value={editFormData.status} onChange={e => setEditFormData({...editFormData, status: e.target.value})}>
+                                                            <option value="Order Received">Received</option>
+                                                            <option value="Cutting & Sizing">Cutting</option>
+                                                            <option value="Stitching in Progress">Stitching</option>
+                                                            <option value="Ready for Pickup">Ready</option>
+                                                        </select>
+                                                    ) : (
+                                                        <select 
+                                                            className={`app-input ${getStatusClass(order.status)}`}
+                                                            style={{padding: '8px', border: 'none', cursor: 'pointer', fontWeight: '600'}}
+                                                            value={order.status} 
+                                                            onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
+                                                        >
+                                                            <option value="Order Received">Received</option>
+                                                            <option value="Cutting & Sizing">Cutting</option>
+                                                            <option value="Stitching in Progress">Stitching</option>
+                                                            <option value="Ready for Pickup">Ready</option>
+                                                        </select>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {isEditing ? (
+                                                        <div style={{display: 'flex', gap: '5px'}}>
+                                                            <button className="action-btn" onClick={() => handleSaveEdit(order._id)} title="Save Changes" style={{color: '#10b981', backgroundColor: '#d1fae5'}}><Save size={18} /></button>
+                                                            <button className="action-btn" onClick={cancelEditing} title="Cancel" style={{color: '#ef4444', backgroundColor: '#fee2e2'}}><X size={18} /></button>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{display: 'flex', gap: '5px'}}>
+                                                            <button className="action-btn" onClick={() => startEditing(order)} title="Edit Order" style={{color: '#3b82f6'}}><Edit2 size={18} /></button>
+                                                            <a href={`https://wa.me/91${order.customer?.phone}?text=${encodeURIComponent('Hello! Your order #' + order.orderNumber + ' at Best Velan Tailors is currently: ' + order.status + '.')}`} target="_blank" rel="noopener noreferrer" className="action-btn" title="Notify via WhatsApp" style={{color: '#25D366', display: 'flex', alignItems: 'center'}}><MessageCircle size={18} /></a>
+                                                            <button className="action-btn" onClick={() => handleDeleteOrder(order._id)} title="Delete Order" style={{color: '#ef4444'}}><Trash2 size={18} /></button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -256,16 +326,22 @@ const AdminDashboard = () => {
                             <p style={{color: '#64748b'}}>Manage your security credentials</p>
                         </div>
                         
-                        <form className="app-form">
+                        {profileMsg && (
+                            <div style={{ backgroundColor: profileMsg.includes('Failed') ? '#fee2e2' : '#dcfce7', color: profileMsg.includes('Failed') ? '#991b1b' : '#166534', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', fontWeight: '600' }}>
+                                {profileMsg}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleUpdateProfile} className="app-form">
                             <div className="input-group">
                                 <label>Username</label>
                                 <input type="text" className="app-input" defaultValue="admin" disabled style={{backgroundColor: '#e2e8f0', cursor: 'not-allowed'}} />
                             </div>
                             <div className="input-group">
                                 <label>New Password</label>
-                                <input type="password" className="app-input" placeholder="Enter new password" />
+                                <input type="password" className="app-input" placeholder="Enter new password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength="6" />
                             </div>
-                            <button type="button" className="app-btn-primary" style={{marginTop: '20px'}}>Update Password</button>
+                            <button type="submit" className="app-btn-primary" style={{marginTop: '20px'}}>Update Password</button>
                         </form>
                     </div>
                 );
@@ -299,7 +375,7 @@ const AdminDashboard = () => {
                 </button>
             </aside>
 
-            {/* Mobile Bottom Navigation (App-like) */}
+            {/* Mobile Bottom Navigation */}
             <nav className="mobile-bottom-nav">
                 <button className={`mobile-nav-item ${activeTab === 'insert-order' ? 'active' : ''}`} onClick={() => setActiveTab('insert-order')}>
                     <div className="mobile-icon-wrapper"><PlusCircle size={22} /></div>

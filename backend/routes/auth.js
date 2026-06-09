@@ -43,9 +43,9 @@ router.post('/login', async (req, res) => {
 router.put('/profile', async (req, res) => {
     try {
         // In a real app, protect this route with a JWT middleware
-        const { id, username, password, profilePicture } = req.body;
+        const { username, password, profilePicture } = req.body;
         
-        const admin = await Admin.findById(id);
+        const admin = await Admin.findOne();
         if (!admin) return res.status(404).json({ error: 'Admin not found' });
         
         if (username) admin.username = username;

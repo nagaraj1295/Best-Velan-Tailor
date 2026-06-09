@@ -106,6 +106,32 @@ router.put('/:id/status', async (req, res) => {
     }
 });
 
+// Update full order details (Admin Panel Edit Button)
+router.put('/:id', async (req, res) => {
+    try {
+        const { status, materialName, customerName } = req.body;
+        
+        const order = await Order.findById(req.params.id).populate('customer');
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        
+        // Update order
+        if (status) order.status = status;
+        if (materialName) order.materialName = materialName;
+        if (status === 'Ready for Pickup') order.pickupDate = Date.now();
+        await order.save();
+        
+        // Update customer name if provided
+        if (customerName && order.customer) {
+            order.customer.name = customerName;
+            await order.customer.save();
+        }
+        
+        res.status(200).json(order);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update order details' });
+    }
+});
+
 // Delete order (Admin Panel)
 router.delete('/:id', async (req, res) => {
     try {
