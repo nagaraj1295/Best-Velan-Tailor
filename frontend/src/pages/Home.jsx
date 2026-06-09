@@ -42,7 +42,7 @@ const Home = () => {
             <header className="header">
                 <div className="container nav-container">
                     <a href="#" className="logo">
-                        <img src="/assets/logo.png" alt="Best Velan Tailors Logo" id="brand-logo" onError={(e) => { e.target.style.display='none'; document.getElementById('text-logo').style.display='block'; }} />
+                        <img src="/assets/logo.webp" alt="Best Velan Tailors Logo" id="brand-logo" onError={(e) => { e.target.style.display='none'; document.getElementById('text-logo').style.display='block'; }} />
                         <span id="text-logo" style={{display: 'none'}}>Best Velan <span className="highlight">Tailors</span></span>
                     </a>
                     <nav className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>

@@ -34,14 +34,40 @@ const AdminDashboard = () => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
+        // Setup Axios Interceptors for Auth
+        const reqInterceptor = axios.interceptors.request.use((config) => {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+            }
+            return config;
+        }, (error) => Promise.reject(error));
+
+        const resInterceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response && error.response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminProfile');
+                    navigate('/admin');
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        if(!localStorage.getItem('adminToken')) {
             navigate('/admin');
-        } else {
-            fetchOrders();
-            fetchCustomers();
-            fetchFeedbacks();
+            return;
         }
+        
+        fetchOrders();
+        fetchCustomers();
+        fetchFeedbacks();
+
+        return () => {
+            axios.interceptors.request.eject(reqInterceptor);
+            axios.interceptors.response.eject(resInterceptor);
+        };
     }, [navigate]);
 
     const fetchOrders = async () => {
@@ -64,8 +90,23 @@ const AdminDashboard = () => {
             setFeedbacks(res.data);
         } catch (error) { console.error("Error fetching feedbacks"); }
     };
+        } catch (error) { console.error("Failed to fetch orders"); }
+    };
 
-    // ... [Handlers remain exactly the same: handleCreateOrder, startEditing, etc.]
+    const fetchCustomers = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/api/customers`);
+            setCustomers(res.data);
+        } catch (error) { console.error("Failed to fetch customers"); }
+    };
+
+    const fetchFeedbacks = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/api/feedback`);
+            setFeedbacks(res.data);
+        } catch (error) { console.error("Failed to fetch feedback"); }
+    };
+
     const handleCreateOrder = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);

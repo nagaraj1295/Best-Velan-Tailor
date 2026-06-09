@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Feedback = require('../models/Feedback');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Submit Feedback (Customer Public Site)
 router.post('/', async (req, res) => {
@@ -21,7 +22,7 @@ router.post('/', async (req, res) => {
 });
 
 // Get all Feedback (Admin Panel)
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const feedbacks = await Feedback.find().sort({ createdAt: -1 });
         res.status(200).json(feedbacks);
@@ -32,7 +33,7 @@ router.get('/', async (req, res) => {
 });
 
 // Update Feedback Category
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     try {
         const { category } = req.body;
         const updatedFeedback = await Feedback.findByIdAndUpdate(req.params.id, { category }, { new: true });
@@ -44,7 +45,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete Feedback
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         await Feedback.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: 'Feedback deleted successfully' });

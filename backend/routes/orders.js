@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Helper to generate unique 12-digit order number
 const generateOrderNumber = async () => {
@@ -16,9 +17,15 @@ const generateOrderNumber = async () => {
 };
 
 // Create a new Order (Admin Panel)
-router.post('/create', async (req, res) => {
+router.post('/create', authMiddleware, async (req, res) => {
     try {
-        const { name, place, phone, materialName, status } = req.body;
+        const { name, place, phone: rawPhone, materialName, status } = req.body;
+        
+        if (!name || !rawPhone || !materialName) {
+            return res.status(400).json({ error: 'Name, phone, and material name are required' });
+        }
+
+        const phone = rawPhone.replace(/\D/g, '').slice(-10);
         
         // 1. Handle Customer Logic (Repeat Visits)
         let customer = await Customer.findOne({ phone });
@@ -58,7 +65,8 @@ router.post('/create', async (req, res) => {
 // Check Order Status (Customer Public Site)
 router.post('/check-status', async (req, res) => {
     try {
-        const { orderNumber, phone } = req.body;
+        const { orderNumber, phone: rawPhone } = req.body;
+        const phone = rawPhone.replace(/\D/g, '').slice(-10);
         
         // Find order and populate customer to verify phone number
         const order = await Order.findOne({ orderNumber }).populate('customer');
@@ -80,7 +88,7 @@ router.post('/check-status', async (req, res) => {
 });
 
 // Get all orders (Admin Panel)
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const orders = await Order.find().populate('customer').sort({ createdAt: -1 });
         res.status(200).json(orders);
@@ -90,7 +98,7 @@ router.get('/', async (req, res) => {
 });
 
 // Update order status (Admin Panel)
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status } = req.body;
         let updateData = { status };
@@ -107,7 +115,7 @@ router.put('/:id/status', async (req, res) => {
 });
 
 // Update full order details (Admin Panel Edit Button)
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     try {
         const { status, materialName, customerName } = req.body;
         
@@ -133,7 +141,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete order (Admin Panel)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         await Order.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: 'Order deleted successfully' });

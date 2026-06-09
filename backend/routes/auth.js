@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_jwt_key_velan_tailor';
 
@@ -40,9 +41,8 @@ router.post('/login', async (req, res) => {
 });
 
 // Update Profile
-router.put('/profile', async (req, res) => {
+router.put('/profile', authMiddleware, async (req, res) => {
     try {
-        // In a real app, protect this route with a JWT middleware
         const { username, password, profilePicture } = req.body;
         
         const admin = await Admin.findOne();
