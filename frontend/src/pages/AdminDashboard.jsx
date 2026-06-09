@@ -90,22 +90,7 @@ const AdminDashboard = () => {
             setFeedbacks(res.data);
         } catch (error) { console.error("Error fetching feedbacks"); }
     };
-        } catch (error) { console.error("Failed to fetch orders"); }
-    };
 
-    const fetchCustomers = async () => {
-        try {
-            const res = await axios.get(`${API_URL}/api/customers`);
-            setCustomers(res.data);
-        } catch (error) { console.error("Failed to fetch customers"); }
-    };
-
-    const fetchFeedbacks = async () => {
-        try {
-            const res = await axios.get(`${API_URL}/api/feedback`);
-            setFeedbacks(res.data);
-        } catch (error) { console.error("Failed to fetch feedback"); }
-    };
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
