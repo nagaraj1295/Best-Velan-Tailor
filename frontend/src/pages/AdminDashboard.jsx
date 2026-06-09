@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, PlusCircle, Settings, LogOut, MessageCircle, Trash2, Edit } from 'lucide-react';
+import { LayoutDashboard, Users, PlusCircle, Settings, LogOut, MessageCircle, Trash2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import './AdminDashboard.css';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('insert-order');
@@ -14,6 +15,7 @@ const AdminDashboard = () => {
         name: '', place: '', phone: '', materialName: '', status: 'Order Received'
     });
     const [insertMsg, setInsertMsg] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     useEffect(() => {
@@ -42,15 +44,19 @@ const AdminDashboard = () => {
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             await axios.post(`${API_URL}/api/orders/create`, formData);
-            setInsertMsg('Order created successfully!');
+            setInsertMsg('Order successfully created!');
             setFormData({ name: '', place: '', phone: '', materialName: '', status: 'Order Received' });
             fetchOrders();
             fetchCustomers();
-            setTimeout(() => setInsertMsg(''), 3000);
+            setTimeout(() => setInsertMsg(''), 4000);
         } catch (error) {
-            setInsertMsg('Failed to create order.');
+            setInsertMsg('Failed to create order. Phone number might be invalid.');
+            setTimeout(() => setInsertMsg(''), 4000);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -62,7 +68,7 @@ const AdminDashboard = () => {
     };
 
     const handleDeleteOrder = async (orderId) => {
-        if(window.confirm('Are you sure you want to delete this order?')) {
+        if(window.confirm('Are you sure you want to delete this order permanently?')) {
             try {
                 await axios.delete(`${API_URL}/api/orders/${orderId}`);
                 fetchOrders();
@@ -71,113 +77,196 @@ const AdminDashboard = () => {
     };
 
     const openWhatsApp = (phone, orderNumber, status) => {
-        const message = encodeURIComponent(`Hello, your order #${orderNumber} at Best Velan Tailors is currently: ${status}.`);
+        const message = encodeURIComponent(`Hello! Your order #${orderNumber} at Best Velan Tailors is currently: ${status}.`);
         window.open(`https://wa.me/91${phone}?text=${message}`, '_blank');
+    };
+
+    const getStatusClass = (status) => {
+        if (status.includes('Received')) return 'status-received';
+        if (status.includes('Cutting')) return 'status-cutting';
+        if (status.includes('Stitching')) return 'status-stitching';
+        if (status.includes('Ready')) return 'status-ready';
+        return '';
+    };
+
+    const getTabTitle = () => {
+        switch(activeTab) {
+            case 'insert-order': return 'New Order';
+            case 'view-orders': return 'All Orders';
+            case 'customers': return 'Customers';
+            case 'profile': return 'Settings';
+            default: return 'Dashboard';
+        }
     };
 
     const renderContent = () => {
         switch(activeTab) {
             case 'insert-order':
                 return (
-                    <div>
-                        <h2>Create New Order</h2>
-                        {insertMsg && <p style={{color: 'green', fontWeight: 'bold'}}>{insertMsg}</p>}
-                        <form onSubmit={handleCreateOrder} style={{maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px'}}>
-                            <input type="text" placeholder="Customer Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
-                            <input type="text" placeholder="Place / City" value={formData.place} onChange={e => setFormData({...formData, place: e.target.value})} required style={inputStyle} />
-                            <input type="text" placeholder="Mobile Number (10 digits)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required style={inputStyle} />
-                            <input type="text" placeholder="Material Name (e.g., Raymond Cotton)" value={formData.materialName} onChange={e => setFormData({...formData, materialName: e.target.value})} required style={inputStyle} />
-                            <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} style={inputStyle}>
-                                <option value="Order Received">Order Received</option>
-                                <option value="Cutting & Sizing">Cutting & Sizing</option>
-                                <option value="Stitching in Progress">Stitching in Progress</option>
-                                <option value="Ready for Pickup">Ready for Pickup</option>
-                            </select>
-                            <button type="submit" style={{backgroundColor: '#27ae60', color: 'white', padding: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold'}}>Create Order</button>
+                    <div className="admin-content-card fade-up in-view">
+                        <h2 className="admin-page-title">Create New Order</h2>
+                        
+                        {insertMsg && (
+                            <div style={{ backgroundColor: insertMsg.includes('Failed') ? '#fee2e2' : '#dcfce7', color: insertMsg.includes('Failed') ? '#991b1b' : '#166534', padding: '16px', borderRadius: '8px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <CheckCircle2 size={20} />
+                                <span style={{fontWeight: '600'}}>{insertMsg}</span>
+                            </div>
+                        )}
+                        
+                        <form onSubmit={handleCreateOrder} className="app-form">
+                            <div className="input-group">
+                                <label>Customer Name</label>
+                                <input type="text" className="app-input" placeholder="e.g. John Doe" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                            </div>
+                            
+                            <div className="input-group">
+                                <label>Mobile Number</label>
+                                <input type="tel" className="app-input" placeholder="10-digit number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required maxLength="10" />
+                            </div>
+
+                            <div className="input-group">
+                                <label>City / Place</label>
+                                <input type="text" className="app-input" placeholder="e.g. Alanganallur" value={formData.place} onChange={e => setFormData({...formData, place: e.target.value})} required />
+                            </div>
+                            
+                            <div className="input-group">
+                                <label>Material Name</label>
+                                <input type="text" className="app-input" placeholder="e.g. Raymond Cotton Shirt" value={formData.materialName} onChange={e => setFormData({...formData, materialName: e.target.value})} required />
+                            </div>
+
+                            <div className="input-group">
+                                <label>Initial Status</label>
+                                <select className="app-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                                    <option value="Order Received">Order Received</option>
+                                    <option value="Cutting & Sizing">Cutting & Sizing</option>
+                                    <option value="Stitching in Progress">Stitching in Progress</option>
+                                    <option value="Ready for Pickup">Ready for Pickup</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" className="app-btn-primary" disabled={isSubmitting}>
+                                {isSubmitting ? 'Creating...' : 'Create Order'}
+                            </button>
                         </form>
                     </div>
                 );
             case 'view-orders':
                 return (
-                    <div>
-                        <h2>All Orders</h2>
-                        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '20px', backgroundColor: '#fff'}}>
-                            <thead>
-                                <tr style={{backgroundColor: '#0B1B3D', color: '#fff'}}>
-                                    <th style={thStyle}>Date</th>
-                                    <th style={thStyle}>Order ID</th>
-                                    <th style={thStyle}>Customer</th>
-                                    <th style={thStyle}>Material</th>
-                                    <th style={thStyle}>Status</th>
-                                    <th style={thStyle}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orders.map(order => (
-                                    <tr key={order._id} style={{borderBottom: '1px solid #eee'}}>
-                                        <td style={tdStyle}>{new Date(order.createdAt).toLocaleDateString()}</td>
-                                        <td style={tdStyle}><strong>{order.orderNumber}</strong></td>
-                                        <td style={tdStyle}>{order.customer?.name} ({order.customer?.phone})</td>
-                                        <td style={tdStyle}>{order.materialName}</td>
-                                        <td style={tdStyle}>
-                                            <select 
-                                                value={order.status} 
-                                                onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
-                                                style={{padding: '5px', borderRadius: '4px', border: '1px solid #ccc'}}
-                                            >
-                                                <option value="Order Received">Order Received</option>
-                                                <option value="Cutting & Sizing">Cutting & Sizing</option>
-                                                <option value="Stitching in Progress">Stitching in Progress</option>
-                                                <option value="Ready for Pickup">Ready for Pickup</option>
-                                            </select>
-                                        </td>
-                                        <td style={tdStyle}>
-                                            <button onClick={() => openWhatsApp(order.customer?.phone, order.orderNumber, order.status)} title="Send WhatsApp" style={{marginRight: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#25D366'}}>
-                                                <MessageCircle size={20} />
-                                            </button>
-                                            <button onClick={() => handleDeleteOrder(order._id)} title="Delete Order" style={{background: 'none', border: 'none', cursor: 'pointer', color: '#e74c3c'}}>
-                                                <Trash2 size={20} />
-                                            </button>
-                                        </td>
+                    <div className="admin-content-card fade-up in-view">
+                        <h2 className="admin-page-title">Manage Orders</h2>
+                        <div className="table-container">
+                            <table className="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer Info</th>
+                                        <th>Material</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {orders.length === 0 ? (
+                                        <tr><td colSpan="5" style={{textAlign: 'center', padding: '30px', color: '#64748b'}}>No orders found. Create one first!</td></tr>
+                                    ) : orders.map(order => (
+                                        <tr key={order._id}>
+                                            <td>
+                                                <div style={{fontWeight: '700', color: '#0B1B3D'}}>{order.orderNumber}</div>
+                                                <div style={{fontSize: '0.8rem', color: '#64748b'}}>{new Date(order.createdAt).toLocaleDateString()}</div>
+                                            </td>
+                                            <td>
+                                                <div style={{fontWeight: '600'}}>{order.customer?.name}</div>
+                                                <div style={{fontSize: '0.85rem', color: '#64748b'}}>{order.customer?.phone}</div>
+                                            </td>
+                                            <td>{order.materialName}</td>
+                                            <td>
+                                                <select 
+                                                    className={`app-input ${getStatusClass(order.status)}`}
+                                                    style={{padding: '8px', border: 'none', cursor: 'pointer', fontWeight: '600'}}
+                                                    value={order.status} 
+                                                    onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
+                                                >
+                                                    <option value="Order Received">Received</option>
+                                                    <option value="Cutting & Sizing">Cutting</option>
+                                                    <option value="Stitching in Progress">Stitching</option>
+                                                    <option value="Ready for Pickup">Ready</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <div style={{display: 'flex', gap: '5px'}}>
+                                                    <button className="action-btn" onClick={() => openWhatsApp(order.customer?.phone, order.orderNumber, order.status)} title="Notify via WhatsApp" style={{color: '#25D366'}}>
+                                                        <MessageCircle size={20} />
+                                                    </button>
+                                                    <button className="action-btn" onClick={() => handleDeleteOrder(order._id)} title="Delete Order" style={{color: '#ef4444'}}>
+                                                        <Trash2 size={20} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 );
             case 'customers':
                 return (
-                    <div>
-                        <h2>Customer Directory</h2>
-                        <table style={{width: '100%', borderCollapse: 'collapse', marginTop: '20px', backgroundColor: '#fff'}}>
-                            <thead>
-                                <tr style={{backgroundColor: '#0B1B3D', color: '#fff'}}>
-                                    <th style={thStyle}>Name</th>
-                                    <th style={thStyle}>Phone</th>
-                                    <th style={thStyle}>Place</th>
-                                    <th style={thStyle}>Total Visits</th>
-                                    <th style={thStyle}>Last Visit</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {customers.map(c => (
-                                    <tr key={c._id} style={{borderBottom: '1px solid #eee'}}>
-                                        <td style={tdStyle}><strong>{c.name}</strong></td>
-                                        <td style={tdStyle}>{c.phone}</td>
-                                        <td style={tdStyle}>{c.place}</td>
-                                        <td style={tdStyle}><span style={{backgroundColor: '#D4AF37', color: '#0B1B3D', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold'}}>{c.visitCount}</span></td>
-                                        <td style={tdStyle}>{new Date(c.lastVisitDate).toLocaleDateString()}</td>
+                    <div className="admin-content-card fade-up in-view">
+                        <h2 className="admin-page-title">Customer Directory</h2>
+                        <div className="table-container">
+                            <table className="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th>Location</th>
+                                        <th>Visits</th>
+                                        <th>Last Visit</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {customers.length === 0 ? (
+                                        <tr><td colSpan="5" style={{textAlign: 'center', padding: '30px', color: '#64748b'}}>No customers found.</td></tr>
+                                    ) : customers.map(c => (
+                                        <tr key={c._id}>
+                                            <td style={{fontWeight: '600', color: '#0B1B3D'}}>{c.name}</td>
+                                            <td>{c.phone}</td>
+                                            <td>{c.place}</td>
+                                            <td>
+                                                <span style={{backgroundColor: '#fef08a', color: '#854d0e', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold', fontSize: '0.85rem'}}>
+                                                    {c.visitCount}
+                                                </span>
+                                            </td>
+                                            <td style={{color: '#64748b'}}>{new Date(c.lastVisitDate).toLocaleDateString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 );
             case 'profile':
                 return (
-                    <div>
-                        <h2>Admin Profile</h2>
-                        <p>Profile settings (Username, Password, Picture) implementation goes here.</p>
+                    <div className="admin-content-card fade-up in-view" style={{maxWidth: '500px', margin: '0 auto'}}>
+                        <div style={{textAlign: 'center', marginBottom: '30px'}}>
+                            <div style={{width: '80px', height: '80px', backgroundColor: '#e2e8f0', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 15px'}}>
+                                <ShieldCheck size={40} color="#64748b" />
+                            </div>
+                            <h2 className="admin-page-title" style={{marginBottom: '5px'}}>Admin Settings</h2>
+                            <p style={{color: '#64748b'}}>Manage your security credentials</p>
+                        </div>
+                        
+                        <form className="app-form">
+                            <div className="input-group">
+                                <label>Username</label>
+                                <input type="text" className="app-input" defaultValue="admin" disabled style={{backgroundColor: '#e2e8f0', cursor: 'not-allowed'}} />
+                            </div>
+                            <div className="input-group">
+                                <label>New Password</label>
+                                <input type="password" className="app-input" placeholder="Enter new password" />
+                            </div>
+                            <button type="button" className="app-btn-primary" style={{marginTop: '20px'}}>Update Password</button>
+                        </form>
                     </div>
                 );
             default: return null;
@@ -185,39 +274,70 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div style={{display: 'flex', minHeight: '100vh', backgroundColor: '#f4f6f8'}}>
-            {/* Sidebar */}
-            <div style={{width: '250px', backgroundColor: '#0B1B3D', color: '#fff', padding: '20px', display: 'flex', flexDirection: 'column'}}>
-                <h3 style={{fontFamily: 'Playfair Display', color: '#D4AF37', marginBottom: '40px', fontSize: '1.5rem'}}>Admin Panel</h3>
+        <div className="admin-layout">
+            {/* Desktop Sidebar */}
+            <aside className="admin-sidebar">
+                <div className="admin-brand">Velan Admin</div>
                 
-                <div style={{display: 'flex', flexDirection: 'column', gap: '15px', flexGrow: 1}}>
-                    <button onClick={() => setActiveTab('insert-order')} style={navBtnStyle(activeTab === 'insert-order')}><PlusCircle size={18}/> Insert Order</button>
-                    <button onClick={() => setActiveTab('view-orders')} style={navBtnStyle(activeTab === 'view-orders')}><LayoutDashboard size={18}/> View Orders</button>
-                    <button onClick={() => setActiveTab('customers')} style={navBtnStyle(activeTab === 'customers')}><Users size={18}/> Customers</button>
-                    <button onClick={() => setActiveTab('profile')} style={navBtnStyle(activeTab === 'profile')}><Settings size={18}/> Profile</button>
-                </div>
+                <nav className="admin-nav">
+                    <button className={`admin-nav-btn ${activeTab === 'insert-order' ? 'active' : ''}`} onClick={() => setActiveTab('insert-order')}>
+                        <PlusCircle size={20}/> New Order
+                    </button>
+                    <button className={`admin-nav-btn ${activeTab === 'view-orders' ? 'active' : ''}`} onClick={() => setActiveTab('view-orders')}>
+                        <LayoutDashboard size={20}/> Manage Orders
+                    </button>
+                    <button className={`admin-nav-btn ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
+                        <Users size={20}/> Customers
+                    </button>
+                    <button className={`admin-nav-btn ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+                        <Settings size={20}/> Settings
+                    </button>
+                </nav>
 
-                <button onClick={() => { localStorage.removeItem('adminToken'); navigate('/admin'); }} style={{...navBtnStyle(false), color: '#e74c3c', marginTop: 'auto'}}>
-                    <LogOut size={18}/> Logout
+                <button className="admin-logout-btn" onClick={() => { localStorage.removeItem('adminToken'); navigate('/admin'); }}>
+                    <LogOut size={20}/> Logout
                 </button>
-            </div>
+            </aside>
+
+            {/* Mobile Bottom Navigation (App-like) */}
+            <nav className="mobile-bottom-nav">
+                <button className={`mobile-nav-item ${activeTab === 'insert-order' ? 'active' : ''}`} onClick={() => setActiveTab('insert-order')}>
+                    <div className="mobile-icon-wrapper"><PlusCircle size={22} /></div>
+                    <span>New</span>
+                </button>
+                <button className={`mobile-nav-item ${activeTab === 'view-orders' ? 'active' : ''}`} onClick={() => setActiveTab('view-orders')}>
+                    <div className="mobile-icon-wrapper"><LayoutDashboard size={22} /></div>
+                    <span>Orders</span>
+                </button>
+                <button className={`mobile-nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
+                    <div className="mobile-icon-wrapper"><Users size={22} /></div>
+                    <span>Clients</span>
+                </button>
+                <button className={`mobile-nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+                    <div className="mobile-icon-wrapper"><Settings size={22} /></div>
+                    <span>Profile</span>
+                </button>
+            </nav>
 
             {/* Main Content */}
-            <div style={{flexGrow: 1, padding: '40px', overflowY: 'auto'}}>
+            <main className="admin-main">
+                {/* Mobile Header */}
+                <div className="mobile-header">
+                    <div style={{fontFamily: 'Playfair Display', fontWeight: 'bold', fontSize: '1.2rem', color: '#0B1B3D'}}>
+                        Velan <span style={{color: '#D4AF37'}}>Admin</span>
+                    </div>
+                    <div style={{fontWeight: '600', color: '#64748b'}}>
+                        {getTabTitle()}
+                    </div>
+                    <button onClick={() => { localStorage.removeItem('adminToken'); navigate('/admin'); }} style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '5px'}}>
+                        <LogOut size={20} />
+                    </button>
+                </div>
+
                 {renderContent()}
-            </div>
+            </main>
         </div>
     );
 };
-
-const inputStyle = { padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' };
-const thStyle = { padding: '12px', textAlign: 'left' };
-const tdStyle = { padding: '12px', textAlign: 'left' };
-const navBtnStyle = (isActive) => ({
-    display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px', 
-    backgroundColor: isActive ? 'rgba(212, 175, 55, 0.2)' : 'transparent', 
-    color: isActive ? '#D4AF37' : '#fff', 
-    border: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontSize: '1rem'
-});
 
 export default AdminDashboard;
