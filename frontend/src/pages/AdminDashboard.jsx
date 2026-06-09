@@ -123,6 +123,25 @@ const AdminDashboard = () => {
         }
     };
 
+    const getWhatsAppMessage = (order) => {
+        const name = order.customer?.name || 'Customer';
+        const num = order.orderNumber;
+        const link = window.location.origin;
+        
+        switch(order.status) {
+            case 'Order Received':
+                return `Hello ${name}, your order #${num} at Best Velan Tailors has been received. Check your Order status instantly here: ${link}.\nThank you for choosing us!`;
+            case 'Cutting & Sizing':
+                return `Hello ${name}, your order #${num} is now in the cutting & sizing stage. Our team is working carefully on it.`;
+            case 'Stitching in Progress':
+                return `Hello ${name}, your order #${num} is currently being stitched. We’re crafting it with precision.`;
+            case 'Ready for Pickup':
+                return `Hello ${name}, your order #${num} is ready for pickup at Best Velan Tailors. We look forward to seeing you!\nFor any query fill your feedback here.`;
+            default:
+                return `Hello ${name}! Your order #${num} at Best Velan Tailors is currently: ${order.status}.`;
+        }
+    };
+
     const getStatusClass = (status) => {
         if (status.includes('Received')) return 'status-received';
         if (status.includes('Cutting')) return 'status-cutting';
@@ -266,7 +285,7 @@ const AdminDashboard = () => {
                                                     ) : (
                                                         <div style={{display: 'flex', gap: '5px'}}>
                                                             <button className="action-btn" onClick={() => startEditing(order)} title="Edit Order" style={{color: '#3b82f6'}}><Edit2 size={18} /></button>
-                                                            <a href={`https://wa.me/91${order.customer?.phone}?text=${encodeURIComponent('Hello! Your order #' + order.orderNumber + ' at Best Velan Tailors is currently: ' + order.status + '.')}`} target="_blank" rel="noopener noreferrer" className="action-btn" title="Notify via WhatsApp" style={{color: '#25D366', display: 'flex', alignItems: 'center'}}><MessageCircle size={18} /></a>
+                                                            <a href={`https://wa.me/91${order.customer?.phone}?text=${encodeURIComponent(getWhatsAppMessage(order))}`} target="_blank" rel="noopener noreferrer" className="action-btn" title="Notify via WhatsApp" style={{color: '#25D366', display: 'flex', alignItems: 'center'}}><MessageCircle size={18} /></a>
                                                             <button className="action-btn" onClick={() => handleDeleteOrder(order._id)} title="Delete Order" style={{color: '#ef4444'}}><Trash2 size={18} /></button>
                                                         </div>
                                                     )}
