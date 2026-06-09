@@ -163,13 +163,13 @@ const AdminDashboard = () => {
         
         switch(order.status) {
             case 'Order Received':
-                return `Hello ${name}, your order #${num} at Best Velan Tailors has been received. Check your Order status instantly here: ${link}.\nThank you for choosing us!`;
+                return `Hello ${name}, your order #${num} at Best Velan Tailors has been received. \nCheck your Order status instantly here: ${link}.\n\nThank you for choosing us! 😊`;
             case 'Cutting & Sizing':
                 return `Hello ${name}, your order #${num} is now in the cutting & sizing stage. Our team is working carefully on it.`;
             case 'Stitching in Progress':
                 return `Hello ${name}, your order #${num} is currently being stitched. We’re crafting it with precision.`;
             case 'Ready for Pickup':
-                return `Hello ${name}, your order #${num} is ready for pickup at Best Velan Tailors. We look forward to seeing you!\nFor any query fill your feedback here: ${link}#feedback`;
+                return `Hello ${name}, your order #${num} is ready for pickup at Best Velan Tailors. \nFor any query fill your feedback here: ${link}\n\nWe look forward to seeing you! 🤝`;
             default:
                 return `Hello ${name}! Your order #${num} at Best Velan Tailors is currently: ${order.status}.`;
         }
